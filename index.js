@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import 'dotenv/config'
 
 const app = express();
@@ -23,6 +23,7 @@ export async function connectToMongoDB() {
 const mongoClient = await connectToMongoDB();
 const db = mongoClient.db('togetherWe');
 const eventsCollection = db.collection('events')
+const eventsJoinedCollection = db.collection('joinedEvents')
 
 app.get('/events', async(req,res)=>{
 const events = await eventsCollection.find({}).toArray()
@@ -35,6 +36,17 @@ app.post('/add-event', async(req,res)=>{
 
     console.log(result);
     res.send(result);
+})
+app.get('/events/:id', async (req, res) => {
+    const { id } = req.params;
+    const destination = await eventsCollection.findOne({ _id: new ObjectId(id) });
+    res.send(destination);
+});
+
+app.post('/joined', async (req, res) => {
+    const data = req.body
+    const result = await eventsJoinedCollection.insertOne(data)
+    res.send(result)
 })
 
 app.get('/', (req, res) => {
