@@ -58,6 +58,16 @@ app.delete('/joined/:id', async(req,res)=>{
   const result = await eventsJoinedCollection.deleteOne({ _id:new ObjectId(id) })
   res.send(result)
 })
+app.get("/events/user/:email", async (req, res) => {
+    try {
+        const { email } = req.params;
+        const result = await eventsCollection.find({ email }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to fetch events" });
+    }
+})
 
 app.get('/', (req, res) => {
     res.send({ message: 'server is running fine' });
