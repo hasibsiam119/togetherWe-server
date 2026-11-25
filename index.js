@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { MongoClient, ObjectId } from 'mongodb';
 import 'dotenv/config'
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const app = express();
 const PORT = 8000;
@@ -25,6 +26,25 @@ const db = mongoClient.db('togetherWe');
 const eventsCollection = db.collection('events')
 const eventsJoinedCollection = db.collection('joinedEvents')
 
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization
+  
+  if (!authHeader) {
+    return res.status(401).send({ msg: "Unauthorized" })
+  }
+  const token = authHeader.split(" ")[1]
+
+  const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`))
+
+ try{
+   const { payload } = await jwtVerify(token, JWKS)
+   
+   next()
+ } catch(error){
+   return res.status(500).send({ msg: "Internal server error" })
+ }
+}
+
 app.get('/events', async (req, res) => {
     const today = new Date().toLocaleDateString('en-CA', {
         timeZone: 'Asia/Dhaka'
@@ -38,7 +58,7 @@ app.get('/events', async (req, res) => {
     res.send(events);
 });
 
-app.post('/add-event', async(req,res)=>{
+app.post('/add-event',verifyToken, async(req,res)=>{
     const data = req.body;
     const result = await eventsCollection.insertOne(data);
 
@@ -51,22 +71,22 @@ app.get('/events/:id', async (req, res) => {
     res.send(events);
 });
 
-app.post('/joined', async (req, res) => {
+app.post('/joined',verifyToken, async (req, res) => {
     const data = req.body
     const result = await eventsJoinedCollection.insertOne(data)
     res.send(result)
 })
-app.get('/joined/:email', async (req, res) => {
+app.get('/joined/:email',verifyToken, async (req, res) => {
     const { email } = req.params
     const result = await eventsJoinedCollection.find({ email: email }).toArray()
     res.send(result)
 })
-app.delete('/joined/:id', async(req,res)=>{
+app.delete('/joined/:id', verifyToken, async(req,res)=>{
   const {id} = req.params
   const result = await eventsJoinedCollection.deleteOne({ _id:new ObjectId(id) })
   res.send(result)
 })
-app.get("/events/user/:email", async (req, res) => {
+app.get("/events/user/:email",verifyToken, async (req, res) => {
     try {
         const { email } = req.params;
         const result = await eventsCollection.find({ email }).toArray();
@@ -76,13 +96,13 @@ app.get("/events/user/:email", async (req, res) => {
         res.status(500).send({ message: "Failed to fetch events" });
     }
 })
-app.delete('/events/:id', async (req, res) => {
+app.delete('/events/:id',verifyToken, async (req, res) => {
     const { id } = req.params
     const result = await eventsCollection.deleteOne({ _id: new ObjectId(id) })
     res.send(result)
 })
 
-app.patch('/events/:id', async (req, res) => {
+app.patch('/events/:id',verifyToken, async (req, res) => {
   const {id}= req.params;
   const updatedData = req.body;
   const result = await eventsCollection.updateOne({ _id:new ObjectId(id) }, { $set: updatedData });
