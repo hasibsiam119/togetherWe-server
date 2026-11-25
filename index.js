@@ -68,6 +68,23 @@ app.get("/events/user/:email", async (req, res) => {
         res.status(500).send({ message: "Failed to fetch events" });
     }
 })
+app.delete('/events/:id', async (req, res) => {
+    const { id } = req.params
+    const result = await eventsCollection.deleteOne({ _id: new ObjectId(id) })
+    res.send(result)
+})
+
+app.patch('/events/:id', async (req, res) => {
+  const {id}= req.params;
+  const updatedData = req.body;
+  const result = await eventsCollection.updateOne({ _id:new ObjectId(id) }, { $set: updatedData });
+  res.send(result);
+});
+
+app.get('/featured', async (req, res) => {
+    const destinations = await eventsCollection.find({}).sort({ date: 1 }).limit(6).toArray();
+    res.send(destinations);
+});
 
 app.get('/', (req, res) => {
     res.send({ message: 'server is running fine' });
