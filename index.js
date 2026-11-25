@@ -25,10 +25,18 @@ const db = mongoClient.db('togetherWe');
 const eventsCollection = db.collection('events')
 const eventsJoinedCollection = db.collection('joinedEvents')
 
-app.get('/events', async(req,res)=>{
-const events = await eventsCollection.find({}).toArray()
-res.send(events)
-})
+app.get('/events', async (req, res) => {
+    const today = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'Asia/Dhaka'
+    });
+
+    const events = await eventsCollection
+        .find({ date: { $gte: today } })
+        .sort({ date: 1 })
+        .toArray();
+
+    res.send(events);
+});
 
 app.post('/add-event', async(req,res)=>{
     const data = req.body;
@@ -39,8 +47,8 @@ app.post('/add-event', async(req,res)=>{
 })
 app.get('/events/:id', async (req, res) => {
     const { id } = req.params;
-    const destination = await eventsCollection.findOne({ _id: new ObjectId(id) });
-    res.send(destination);
+    const events = await eventsCollection.findOne({ _id: new ObjectId(id) });
+    res.send(events);
 });
 
 app.post('/joined', async (req, res) => {
@@ -82,8 +90,17 @@ app.patch('/events/:id', async (req, res) => {
 });
 
 app.get('/featured', async (req, res) => {
-    const destinations = await eventsCollection.find({}).sort({ date: 1 }).limit(6).toArray();
-    res.send(destinations);
+    const today = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'Asia/Dhaka'
+    });
+
+    const featured = await eventsCollection
+        .find({ date: { $gte: today } })
+        .sort({ date: 1 })
+        .limit(6)
+        .toArray();
+
+    res.send(featured);
 });
 
 app.get('/', (req, res) => {
