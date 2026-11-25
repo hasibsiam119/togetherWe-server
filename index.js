@@ -48,6 +48,16 @@ app.post('/joined', async (req, res) => {
     const result = await eventsJoinedCollection.insertOne(data)
     res.send(result)
 })
+app.get('/joined/:email', async (req, res) => {
+    const { email } = req.params
+    const result = await eventsJoinedCollection.find({ email: email }).toArray()
+    res.send(result)
+})
+app.delete('/joined/:id', async(req,res)=>{
+  const {id} = req.params
+  const result = await eventsJoinedCollection.deleteOne({ _id:new ObjectId(id) })
+  res.send(result)
+})
 
 app.get('/', (req, res) => {
     res.send({ message: 'server is running fine' });
